@@ -110,4 +110,50 @@ class MoMoController extends Controller
         ]);
     }
 
+    public function createApiKey(Request $request)
+    {
+        $X_Reference_Id = $request->XReferenceId ?? $this->X_Reference_Id;
+        $req = Http::withHeaders([
+            'Ocp-Apim-Subscription-Key' => $this->primaryKey,
+            'Cache-Control: no-cache',
+            'Content-Type' => 'application/json'
+        ])->post("https://sandbox.momodeveloper.mtn.com/v1_0/apiuser/{$X_Reference_Id}/apikey");
+
+        if ($req->status() == 400) {
+            $body = collect($req->json());
+            return response()->json([
+                'status' => $req->status(),
+                'code' => $req->status(),
+                'message' => 'Bad request, e.g. invalid data was sent in the request.',
+                'error' => $body
+            ]);
+        }
+
+        if ($req->status() == 404) {
+            $body = collect($req->json());
+            return response()->json([
+                'status' => $req->status(),
+                'code' => $req->status(),
+                'message' => 'Not found, reference id not found or closed in sandbox',
+                'error' => $body,
+            ]);
+        }
+
+        if ($req->successful() && $req->status() == 201) {
+            $body = collect($req->json());
+            return response()->json([
+                'code' => $req->reason(),
+                'status' => $req->status(),
+                'message' => 'API key for an API user created',
+                'data' => $body,
+            ]);
+        }
+
+        return response()->json([
+            'code' => $req->reason(),
+            'status' => $req->status(),
+            'message' => 'Something went wrong',
+        ]);
+    }
+
 }

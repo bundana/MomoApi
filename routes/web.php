@@ -11,8 +11,10 @@ Route::get('/', function () {
 Route::controller(MoMoController::class)->group(function () {
     Route::get('/apiuser', 'createApiUser');
     Route::get('/apiuser/{id}', 'getApiUser');
+    Route::get('/apiuser/{XReferenceId}/apikey', 'createApiKey')->name('api-key');
 
-    Route::get('/user/profile', function () {
-        // Uses first & second middleware...
+
+    Route::get('test', function (){
+        return \route('api-key', 'ss');
     });
 });
