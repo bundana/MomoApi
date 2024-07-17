@@ -15,10 +15,10 @@ class MoMoController extends Controller
 
     public function __construct()
     {
-        $this->primaryKey = config('momo.primary_key');
-        $this->secondaryKey = config('momo.secondary_key');
-        $this->X_Reference_Id = config('momo.x_reference_id');
-        $this->providerCallbackHost = config('momo.provider_callback_host');
+        $this->primaryKey = config('momo-config.PRIMARY_KEY');
+        $this->secondaryKey = config('momo-config.SECONDARY_KEY');
+        $this->X_Reference_Id = config('momo-config.X-Reference-Id');
+        $this->providerCallbackHost = config('momo-config.providerCallbackHost');
     }
 
     private const CALLBACK = 'https://webhook.site/455d9327-4533-498d-aa16-5fd1f0c88d9b';
@@ -61,6 +61,52 @@ class MoMoController extends Controller
             'status' => $req->status(),
             'message' => 'Something went wrong',
             'uuid' => $uuid,
+        ]);
+    }
+
+    public function getApiUser(Request $request)
+    {
+        $userKey = $request->id ?? $this->X_Reference_Id;
+
+        $req = Http::withHeaders([
+            'Ocp-Apim-Subscription-Key' => $this->primaryKey,
+            'Cache-Control: no-cache',
+            'Content-Type' => 'application/json'
+        ])->get("https://sandbox.momodeveloper.mtn.com/v1_0/apiuser/{$userKey}");
+
+        if ($req->status() == 400) {
+            return response()->json([
+                'status' => $req->status(),
+                'code' => $req->status(),
+                'message' => 'Not found, reference id not found or closed in sandbox',
+            ]);
+        }
+
+        if ($req->status() == 404) {
+            $body = collect($req->json());
+            if (isset($body['code'])) {
+                return response()->json([
+                    'status' => $req->status(),
+                    'code' => $body['code'],
+                    'message' => $body['message'],
+                ]);
+            }
+        }
+
+        if ($req->successful() && $req->status() == 200) {
+            $body = collect($req->json());
+            return response()->json([
+                'code' => $req->reason(),
+                'status' => $req->status(),
+                'message' => 'Api User Created',
+                'data' => $body,
+            ]);
+        }
+
+        return response()->json([
+            'code' => $req->reason(),
+            'status' => $req->status(),
+            'message' => 'Something went wrong',
         ]);
     }
 

@@ -10,6 +10,7 @@ Route::get('/', function () {
 
 Route::controller(MoMoController::class)->group(function () {
     Route::get('/apiuser', 'createApiUser');
+    Route::get('/apiuser/{id}', 'getApiUser');
 
     Route::get('/user/profile', function () {
         // Uses first & second middleware...
