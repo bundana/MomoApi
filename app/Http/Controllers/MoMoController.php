@@ -13,12 +13,15 @@ class MoMoController extends Controller
     private string $X_Reference_Id;
     private string $providerCallbackHost;
 
+    private string $apiKey;
+
     public function __construct()
     {
         $this->primaryKey = config('momo-config.PRIMARY_KEY');
         $this->secondaryKey = config('momo-config.SECONDARY_KEY');
         $this->X_Reference_Id = config('momo-config.X-Reference-Id');
         $this->providerCallbackHost = config('momo-config.providerCallbackHost');
+        $this->apiKey = config('momo-config.apiKey');
     }
 
     private const CALLBACK = 'https://webhook.site/455d9327-4533-498d-aa16-5fd1f0c88d9b';
@@ -145,6 +148,60 @@ class MoMoController extends Controller
                 'code' => $req->reason(),
                 'status' => $req->status(),
                 'message' => 'API key for an API user created',
+                'data' => $body,
+            ]);
+        }
+
+        return response()->json([
+            'code' => $req->reason(),
+            'status' => $req->status(),
+            'message' => 'Something went wrong',
+        ]);
+    }
+
+    public function createAccessToken(Request $request)
+    {
+        /*
+        | CreateAccessToken
+        | This operation is used to create an access token
+        | which can then be used to authorize and authenticate
+        | towards the other end-points of the API.
+         */
+
+        $authorization = base64_encode($this->X_Reference_Id.":".$this->apiKey);
+
+        $req = Http::withHeaders([
+            'Ocp-Apim-Subscription-Key' => $this->primaryKey,
+            'Cache-Control: no-cache',
+            'Content-Type' => 'application/json',
+            'Authorization' => 'Basic '.$authorization,
+        ])->post("https://sandbox.momodeveloper.mtn.com/collection/token/");
+
+        if ($req->status() == 401) {
+            return response()->json([
+                'status' => $req->status(),
+                'code' => $req->status(),
+                'message' => 'Unauthorized',
+                'error' => collect($req->json())
+            ]);
+        }
+
+        if ($req->status() == 404) {
+            $body = collect($req->json());
+            return response()->json([
+                'status' => $req->status(),
+                'code' => $req->status(),
+                'message' => 'Resource not found',
+                'error' => $body
+            ]);
+        }
+
+        if ($req->successful() && $req->status() == 200) {
+            $body = collect($req->json());
+            return response()->json([
+                'code' => $req->reason(),
+                'status' => $req->status(),
+                'message' => 'Access token Created',
                 'data' => $body,
             ]);
         }
